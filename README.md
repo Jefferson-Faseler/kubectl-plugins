@@ -1,5 +1,5 @@
 # kubectl-plugins
-[![CI Status](https://github.com/jordanwilson230/kubectl-plugins/workflows/CI/badge.svg)](https://github.com/jordanwilson230/kubectl-plugins/actions)
+Thanks to @jordanwilson230 for creating this project
 
 A collection of plugins for kubectl integration (for Kubectl versions >= 1.12.0)
 
@@ -16,7 +16,7 @@ A collection of plugins for kubectl integration (for Kubectl versions >= 1.12.0)
 ## Install on Linux/Mac
 ### bash
 ```bash
-git clone https://github.com/jordanwilson230/kubectl-plugins.git
+git clone https://github.com/Jefferson-Faseler/kubectl-plugins.git
 cd kubectl-plugins
 ./install-plugins.sh
 source ~/.bash_profile
@@ -24,7 +24,7 @@ source ~/.bash_profile
 
 ### Zsh
 ```zsh
-git clone https://github.com/jordanwilson230/kubectl-plugins.git
+git clone https://github.com/Jefferson-Faseler/kubectl-plugins.git
 cd kubectl-plugins
 ./install-plugins.sh
 source ~/.zshrc
