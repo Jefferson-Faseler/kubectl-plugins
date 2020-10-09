@@ -18,7 +18,8 @@ while getopts ":i:cph" arg; do
     # Overwrite or add default registry
           ex '+g/IMG_REGISTRY=/d' -cwq ~/${SHELL_PROFILE}
           echo 'export IMG_REGISTRY="'$REGISTRY'"' >> ~/${SHELL_PROFILE}
-          echo -e "\nSaved to ~/${SHELL_PROFILE}. Source or open a new terminal to take effect."
+          eval 'export IMG_REGISTRY="'$REGISTRY'"'
+          echo -e "\nSaved to ~/${SHELL_PROFILE}."
       fi
       IMG_REGISTRY="$REGISTRY"
      ;;
