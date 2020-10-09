@@ -10,6 +10,14 @@ SHELL_PROFILE=$(. ./which-shell.sh)
 COMMAND="${@}"
 export COMMAND="$COMMAND"
 
+function list_namespaces() {
+  cat ~/.kube/plugins/jordanwilson230/config/namespaces
+}
+
+function list_clusters() {
+  cat ~/.kube/plugins/jordanwilson230/config/clusters
+}
+
 ### Description and usage
 function description() {
     echo -e "\n${LBLUE}Description:\n   This plugin intercepts kubectl commands and, based on the arguments issued, \
@@ -40,10 +48,10 @@ function add_prompt() {
     while getopts ":c:n:" arg; do
         case $arg in
             c) # Add Cluster
-               export CLUSTER="${OPTARG}"
+               CLUSTER="${OPTARG}"
                ;;
             n) # Add Namespace
-               export NAMESPACE="${OPTARG}"
+               NAMESPACE="${OPTARG}"
                ;;
             *)
                add_usage
@@ -55,24 +63,13 @@ function add_prompt() {
     if [[ "$NAMESPACE" ]]; then
         read -p "${YELLOW}* Add the namespace ${NAMESPACE} to prompt list [y/n]? ${RESTORE}" answer
         [[ "$answer" != "y" ]] && exit 0
-        echo -e "\n${YELLOW}* Adding ${CLUSTER}${NAMESPACE} to \${KUBECTL_NAMESPACE_PROMPT} in ~/${SHELL_PROFILE}\n- The changes will be applied after starting a new terminal session or after running: source ~/${SHELL_PROFILE} ${RESTORE}"
-        KUBECTL_NAMESPACE_PROMPT="${KUBECTL_NAMESPACE_PROMPT[@]} ${NAMESPACE}"
-        ex '+g/KUBECTL_NAMESPACE_PROMPT=/d' -cwq ~/${SHELL_PROFILE}
-        echo "export KUBECTL_NAMESPACE_PROMPT=\"${KUBECTL_NAMESPACE_PROMPT}\"" >> ~/${SHELL_PROFILE}
+        echo -e "\n${YELLOW}* Adding ${NAMESPACE} to namespaces in ~/.kube/plugins/jordanwilson230/config/namespaces\n${RESTORE}"
+        echo $NAMESPACE >> ~/.kube/plugins/jordanwilson230/config/namespaces
     elif [[ "$CLUSTER" ]]; then
         read -p "${YELLOW}* Add the cluster ${CLUSTER} to prompt list [y/n]? ${RESTORE}" answer
         [[ "$answer" != "y" ]] && exit 0
-        echo -e "\n${YELLOW}* Adding ${CLUSTER} to \${KUBECTL_CLUSTER_PROMPT} in ~/${SHELL_PROFILE}\n- The changes will be applied after starting a new terminal session or after running: source ~/${SHELL_PROFILE} ${RESTORE}"
-        KUBECTL_CLUSTER_PROMPT+="${CLUSTER/%/ }"
-        ex '+g/KUBECTL_CLUSTER_PROMPT=/d' -cwq ~/${SHELL_PROFILE}
-        echo "export KUBECTL_CLUSTER_PROMPT=\"${KUBECTL_CLUSTER_PROMPT}\"" >> ~/${SHELL_PROFILE}
-    fi
-
-    # Add function to check user context when kubectl is invoked.
-    if [[ ! -z "$NAMESPACE" ]] || [[ ! -z "$CLUSTER" ]]; then
-        ex '+g/function kubectl/d' -cwq ~/${SHELL_PROFILE}
-        echo 'function kubectl() { command kubectl prompt "$@" && command kubectl "$@" }' >> ~/${SHELL_PROFILE}
-        exit 0
+        echo -e "\n${YELLOW}* Adding ${CLUSTER} to clusters in ~/.kube/plugins/jordanwilson230/config/clusters\n${RESTORE}"
+        echo $CLUSTER >> ~/.kube/plugins/jordanwilson230/config/clusters
     fi
 }
 
@@ -80,10 +77,8 @@ function add_prompt() {
 
 ### Clear prompt list
 function remove_prompt() {
-    ex '+g/KUBECTL_NAMESPACE_PROMPT=/d' -cwq ~/${SHELL_PROFILE}
-    ex '+g/KUBECTL_CLUSTER_PROMPT=/d' -cwq ~/${SHELL_PROFILE}
-    ex '+g/function kubectl/d' -cwq ~/${SHELL_PROFILE}
-    echo -e "\nCleared prompt list.\nPlease open a new terminal for it to take affect.\n"
+    echo "" > ~/.kube/plugins/jordanwilson230/config/namespaces
+    echo "" > ~/.kube/plugins/jordanwilson230/config/clusters
     exit 0
 }
 
@@ -91,8 +86,8 @@ function remove_prompt() {
 
 ### List flagged environments
 function list_prompt() {
-    echo -e "\n${YELLOW}CLUSTERS: ${KUBECTL_CLUSTER_PROMPT}\nNAMESPACES: ${KUBECTL_NAMESPACE_PROMPT}${RESTORE}\n"
-    exit 0
+  echo -e "\n${YELLOW}CLUSTERS: $(list_clusters)\nNAMESPACES: $(list_namespaces)${RESTORE}\n"
+  exit 0
 }
 
 
@@ -110,16 +105,16 @@ ${YELLOW}Command: ${COMMAND}\n${RESTORE}"
 
 
 # Skip checks if user has not assigned any (using kubectl prompt add [-n namespace OR -c cluster]
-if [[ ! -z "$KUBECTL_NAMESPACE_PROMPT" ]] || [[ ! -z "$KUBECTL_CLUSTER_PROMPT" ]]; then
+if [[ ! -z $(list_namespaces) ]] || [[ ! -z $(list_clusters) ]]; then
   # Only prompt when the command would cause the state of the env to change.
     echo "$@" | grep "deploy\|create\|apply\|set \|delete\|scale " 1>/dev/null
     if [ $? -eq 0 ]; then
         NAMESPACE=$(kubectl config view --template='{{ range .contexts }}{{ if eq .name "'$(kubectl config current-context)'" }}{{ .context.namespace }}{{ end }}{{ end }}')
         CLUSTER=$(kubectl config view --template='{{ range .contexts }}{{ if eq .name "'$(kubectl config current-context)'" }}{{ .context.cluster }}{{ end }}{{ end }}')
-        if [[ "$KUBECTL_NAMESPACE_PROMPT" =~ "$NAMESPACE" ]]; then
+        if [[ $(list_namespaces) =~ "$NAMESPACE" ]]; then
             CLUSTER=''
             prompt "$NAMESPACE"
-        elif [[ "$KUBECTL_CLUSTER_PROMPT" =~ "$CLUSTER" ]]; then
+        elif [[ $(list_clusters) =~ "$CLUSTER" ]]; then
             NAMESPACE=''
             prompt "$CLUSTER"
         fi
